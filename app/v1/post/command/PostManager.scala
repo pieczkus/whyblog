@@ -4,7 +4,7 @@ import akka.actor.Props
 import akka.util.Timeout
 import pl.why.common.PersistentEntity.GetState
 import pl.why.common._
-import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost}
+import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost, PublishPost}
 
 import scala.concurrent.duration._
 
@@ -18,6 +18,8 @@ object PostManager {
                           metaTitle: String, metaDescription: String, metaKeywords: String)
 
   case class AddPost(input: AddPostInput)
+
+  case class AnnouncePost(uuid: String)
 
   val TitleNotUniqueError = ErrorMessage("post.title.nonunique", Some("The post title supplied for a create is not unique"))
 
@@ -58,8 +60,8 @@ class PostManager extends Aggregate[PostData, PostEntity] {
           caller ! Failure(FailureType.Service, ServiceResult.UnexpectedFailure)
       }
 
-    case pp: PublishPost =>
-      forwardCommand(pp.id, pp)
+    case AnnouncePost(postId) =>
+      forwardCommand(postId, PublishPost(postId))
 
     case arp: AddRelatedPost =>
       forwardCommand(arp.id, arp)
