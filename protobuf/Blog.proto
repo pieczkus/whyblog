@@ -1,0 +1,42 @@
+syntax = "proto3";
+option java_package = "pl.why.blog.proto";
+option optimize_for = SPEED;
+
+message BodyComponent {
+    string component = 1;
+    map<string, string> parameters = 2;
+}
+
+message Post {
+    string postId = 1;
+    string key = 2;
+    string author = 3;
+    string title = 4;
+    repeated BodyComponent body = 5;
+    string coverUrl = 6;
+    string metaTitle = 7;
+    string metaDescription = 8;
+    string metaKeywords = 9;
+    int64 publishedOn = 10;
+    int32 commentCount = 11;
+    string timeToRead = 12;
+    repeated string tags = 13;
+    repeated string relatedPosts = 14;
+    bool deleted = 15;
+}
+
+message PostCreated {
+    Post post = 1;
+}
+
+message PostPublished {
+    int64 publishedOn = 1;
+}
+
+message TimeToReadUpdated {
+    string timeToRead = 1;
+}
+
+message RelatedPostAdded {
+    repeated string relatedPostIds = 1;
+}
