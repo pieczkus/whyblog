@@ -61,7 +61,7 @@ object PostView {
 
   case class FindPostPublishedAfter(key: String, after: Long)
 
-  case class FindPostPublishedBefore(key: String, after: Long)
+  case class FindPostPublishedBefore(key: String, before: Long)
 
   //case class FindPublishedPosts(key: String, page: Option[PageRequest])
 
@@ -69,6 +69,7 @@ object PostView {
 }
 
 class PostView extends CommonActor with ElasticSearchSupport with CommentReadModel with PostJsonProtocol {
+
   import PostView._
   import context.dispatcher
 
@@ -80,7 +81,15 @@ class PostView extends CommonActor with ElasticSearchSupport with CommentReadMod
 
   override def receive: Receive = {
     case FindPostByTitle(key, title) =>
-      pipeResponse(queryElasticSearch(boolQuery().must(defaultPublishedQuery(key), termQuery("title.keyword", title))))
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), termQuery("title.keyword", title)), sort = Some(defaultSort)))
 
+    case FindPostsByTag(key, tag) =>
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key)).filter(matchQuery("tags", tag)), sort = Some(defaultSort)))
+
+    case FindPostPublishedAfter(key, after) =>
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1)))
+
+    case FindPostPublishedBefore(key, before) =>
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").to(before).includeLower(false)), size = Some(1)))
   }
 }

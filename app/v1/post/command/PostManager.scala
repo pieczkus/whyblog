@@ -4,6 +4,7 @@ import akka.actor.Props
 import akka.util.Timeout
 import pl.why.common.PersistentEntity.GetState
 import pl.why.common._
+import v1.post.AddPostInput
 import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost, PublishPost}
 
 import scala.concurrent.duration._
@@ -13,9 +14,6 @@ object PostManager {
   val Name = "posts-manager"
 
   case class FindPostById(id: String)
-
-  case class AddPostInput(key: String, author: String, title: String, body: Seq[BodyComponentData], coverUrl: String, tags: List[String],
-                          metaTitle: String, metaDescription: String, metaKeywords: String)
 
   case class AddPost(input: AddPostInput)
 
@@ -51,9 +49,11 @@ class PostManager extends Aggregate[PostData, PostEntity] {
           caller ! Failure(FailureType.Validation, TitleNotUniqueError)
 
         case util.Success(EmptyResult) =>
-          val fo = PostData(id, input.key, input.author, input.title, input.body, input.coverUrl, input.metaTitle, input.metaDescription,
+
+          val body = input.body.map(c => BodyComponentData(c._1, c._2.toMap))
+          val fo = PostData(id, input.key, input.author, input.title, body, input.coverUrl, input.metaTitle, input.metaDescription,
             input
-            .metaKeywords, tags = input.tags, timeToRead = calculateTieToRead(input.body))
+            .metaKeywords, tags = input.tags, timeToRead = calculateTieToRead(body))
           entityShardRegion.tell(CreatePost(fo), caller)
 
         case _ =>
