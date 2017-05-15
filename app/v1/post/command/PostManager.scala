@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 
 
 object PostManager {
-  val Name = "posts-manager"
+  val Name = "post-manager"
 
   case class FindPostById(id: String)
 

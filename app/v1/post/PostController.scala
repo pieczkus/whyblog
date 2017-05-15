@@ -2,6 +2,7 @@ package v1.post
 
 import javax.inject.Inject
 
+import auth.AuthorizedAction
 import pl.why.common.SuccessResult
 import play.api.data.Form
 import play.api.i18n.I18nSupport
@@ -15,7 +16,7 @@ case class BodyComponentInput(component: String, parameters: List[String])
 case class AddPostInput(key: String, author: String, title: String, body: List[(String, List[(String, String)])], coverUrl: String, tags: List[String],
                         metaTitle: String, metaDescription: String, metaKeywords: String)
 
-class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHandler)(implicit ec: ExecutionContext)
+class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHandler, authorizedAction: AuthorizedAction)(implicit ec: ExecutionContext)
   extends AbstractController(cc) with I18nSupport {
 
   private lazy val form: Form[AddPostInput] = {
@@ -42,7 +43,7 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
     )
   }
 
-  def create: Action[AnyContent] = Action.async { implicit request =>
+  def create = authorizedAction.async { implicit request =>
     processJsonCreatePost()
   }
 
