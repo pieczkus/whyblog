@@ -6,7 +6,7 @@ import akka.actor.{ActorRef, Props}
 import akka.persistence.query.EventEnvelope
 import akka.stream.ActorMaterializer
 import com.sksamuel.elastic4s.ElasticDsl._
-import com.sksamuel.elastic4s.searches.queries.{QueryDefinition, RangeQueryDefinition}
+import com.sksamuel.elastic4s.searches.queries.QueryDefinition
 import com.sksamuel.elastic4s.searches.sort.FieldSortDefinition
 import org.elasticsearch.search.sort.SortOrder
 import pl.why.common.ViewBuilder.{InsertAction, UpdateAction}
@@ -43,12 +43,12 @@ class PostViewBuilder @Inject()(@Named("resumable-projection-manager") rpm: Acto
 
   override def actionFor(id: String, env: EventEnvelope): ViewBuilder.IndexAction = env.event match {
     case PostCreated(p) =>
-      val rm = PostRM(p.postId, p.key, p.author, p.timeToRead, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
+      val rm = PostRM(p.postId, p.key, p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
         p.publishedOn, p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.deleted)
       InsertAction(id, rm)
 
-    case PostPublished(_) =>
-      UpdateAction(id, Map("published" -> true))
+    case PostPublished(publishedOn) =>
+      UpdateAction(id, Map("published" -> true, "publishedOn" -> publishedOn))
   }
 }
 
@@ -77,19 +77,20 @@ class PostView extends CommonActor with ElasticSearchSupport with CommentReadMod
 
   lazy val defaultSort = FieldSortDefinition("publishedOn", order = SortOrder.DESC)
 
-  def defaultPublishedQuery(key: String): QueryDefinition = boolQuery().must(rangeQuery("publishedOn").gte(1L.toString), termQuery("key.keyword", key))
+  lazy val defaultPublishedQuery: QueryDefinition = termQuery("published", true)
+  def defaultKeyQuery(key: String): QueryDefinition = termQuery("key.keyword", key)
 
   override def receive: Receive = {
     case FindPostByTitle(key, title) =>
-      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), termQuery("title.keyword", title)), sort = Some(defaultSort)))
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery, defaultKeyQuery(key), termQuery("title.keyword", title)), sort = Some(defaultSort)))
 
     case FindPostsByTag(key, tag) =>
-      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key)).filter(matchQuery("tags", tag)), sort = Some(defaultSort)))
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key)).filter(matchQuery("tags", tag)), sort = Some(defaultSort)))
 
     case FindPostPublishedAfter(key, after) =>
-      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1)))
+      //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1)))
 
     case FindPostPublishedBefore(key, before) =>
-      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").to(before).includeLower(false)), size = Some(1)))
+      //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").to(before).includeLower(false)), size = Some(1)))
   }
 }

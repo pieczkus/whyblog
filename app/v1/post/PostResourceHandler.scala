@@ -7,7 +7,7 @@ import akka.util.Timeout
 import pl.why.common.{EmptyResult, FullResult, ServiceResult, SuccessResult}
 import play.api.libs.json.{JsValue, Json, Writes}
 import v1.post.command.{BodyComponentData, PostData}
-import v1.post.command.PostManager.AddPost
+import v1.post.command.PostManager.{AddPost, AnnouncePost}
 import v1.post.read.PostView.FindPostByTitle
 import v1.post.read.PostViewBuilder.PostRM
 
@@ -59,8 +59,8 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
 
   implicit val timeout: Timeout = 5.seconds
 
-  def create(input: AddPostInput): Future[ServiceResult[Any]] = {
-    (postManager ? AddPost(input)).mapTo[ServiceResult[PostData]].map {
+  def create(key: String, input: AddPostInput): Future[ServiceResult[Any]] = {
+    (postManager ? AddPost(key, input)).mapTo[ServiceResult[PostData]].map {
       case FullResult(_) => SuccessResult
       case _ => EmptyResult
     }
@@ -68,8 +68,15 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
 
   def findByTitle(key: String, title: String): Future[Option[PostResource]] = {
     (postView ? FindPostByTitle(key, title)).mapTo[ServiceResult[Seq[PostRM]]].map {
-      case FullResult(posts) => Some(createCommentResource(posts.head))
+      case FullResult(posts) if posts.nonEmpty => Some(createCommentResource(posts.head))
       case _ => None
+    }
+  }
+
+  def publish(key: String, title: String): Future[ServiceResult[Any]] = {
+    (postManager ? AnnouncePost(key, title)).mapTo[ServiceResult[PostData]].map {
+      case FullResult(_) => SuccessResult
+      case _ => EmptyResult
     }
   }
 

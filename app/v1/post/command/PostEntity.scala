@@ -29,8 +29,6 @@ object PostData {
 object PostEntity {
   val EntityType = "post"
 
-  case class UpdatePostInput(body: String, publishedOn: Long, coverUrl: String, tags: List[String])
-
   object Command {
 
     case class CreatePost(post: PostData) extends EntityCommand {
@@ -38,10 +36,6 @@ object PostEntity {
     }
 
     case class PublishPost(id: String) extends EntityCommand {
-      def entityId: String = id
-    }
-
-    case class UpdateTimeToRead(timeToRead: String, id: String) extends EntityCommand {
       def entityId: String = id
     }
 
@@ -62,7 +56,7 @@ object PostEntity {
 
         val body = p.body.map(b => Blog.BodyComponent(b.component, b.parameters))
 
-        val post = Blog.Post(p.postId, p.key, p.author, p.timeToRead, body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
+        val post = Blog.Post(p.postId, p.key, p.author, p.title, body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
           p.publishedOn, p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.deleted)
         Blog.PostCreated(Some(post))
       }
@@ -73,7 +67,7 @@ object PostEntity {
         case dm: Blog.PostCreated =>
           val p = dm.getPost
           val body = p.body.map(b => BodyComponentData(b.component, b.parameters))
-          PostCreated(PostData(p.postId, p.key, p.author, p.timeToRead, body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
+          PostCreated(PostData(p.postId, p.key, p.author, p.title, body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
             p.publishedOn, p.commentCount, p.timeToRead, p.tags.toList, p.relatedPosts, p.deleted))
       }
     }
@@ -88,19 +82,6 @@ object PostEntity {
       override def fromDataModel: PartialFunction[GeneratedMessage, PostPublished] = {
         case dm: Blog.PostPublished =>
           PostPublished(dm.publishedOn)
-      }
-    }
-
-    case class TimeToReadUpdated(timeToRead: String) extends PostEvent {
-      override def toDataModel: Blog.TimeToReadUpdated = {
-        Blog.TimeToReadUpdated(timeToRead)
-      }
-    }
-
-    object TimeToReadUpdated extends DataModelReader {
-      override def fromDataModel: PartialFunction[GeneratedMessage, TimeToReadUpdated] = {
-        case dm: Blog.TimeToReadUpdated =>
-          TimeToReadUpdated(dm.timeToRead)
       }
     }
 
@@ -126,7 +107,6 @@ class PostEntity extends PersistentEntity[PostData] {
 
   override def additionalCommandHandling: Receive = {
     case CreatePost(post) =>
-      log.info(s"Post tags: ${post.tags}")
       persist(PostCreated(post)) {
         handleEventAndRespond()
       }
@@ -152,7 +132,6 @@ class PostEntity extends PersistentEntity[PostData] {
 
   override def handleEvent(event: EntityEvent): Unit = event match {
     case PostCreated(post) =>
-      log.info(s"Post Event tags: ${post.tags}")
       state = post
 
     case PostPublished(publishedOn) =>

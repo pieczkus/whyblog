@@ -11,29 +11,31 @@ import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class BodyComponentInput(component: String, parameters: List[String])
+case class BodyComponentInput(component: String, parameters: List[(String, String)])
 
-case class AddPostInput(key: String, author: String, title: String, body: List[(String, List[(String, String)])], coverUrl: String, tags: List[String],
+case class AddPostInput(author: String, title: String, body: List[BodyComponentInput], coverUrl: String, tags: List[String],
                         metaTitle: String, metaDescription: String, metaKeywords: String)
 
 class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHandler, authorizedAction: AuthorizedAction)(implicit ec: ExecutionContext)
   extends AbstractController(cc) with I18nSupport {
+
+  private final val API_KEY_HEADER = "Why-Key"
 
   private lazy val form: Form[AddPostInput] = {
     import play.api.data.Forms._
 
     Form(
       mapping(
-        "key" -> nonEmptyText,
         "author" -> nonEmptyText,
         "title" -> nonEmptyText,
-        "body" -> list(tuple(
+        "body" -> list(
+          mapping(
           "component" -> nonEmptyText,
           "parameters" -> list(tuple(
-            "key" -> nonEmptyText,
+            "name" -> nonEmptyText,
             "value" -> nonEmptyText
           ))
-        )),
+        )(BodyComponentInput.apply)(BodyComponentInput.unapply)),
         "coverUrl" -> nonEmptyText,
         "tags" -> list(nonEmptyText),
         "metaTitle" -> nonEmptyText,
@@ -43,16 +45,27 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
     )
   }
 
-  def create = authorizedAction.async { implicit request =>
+  def create: Action[AnyContent] = authorizedAction.async { implicit request =>
     processJsonCreatePost()
   }
 
   def findByTitle(title: String): Action[AnyContent] = Action.async { implicit request =>
-    if (request.headers.get("why-key").isEmpty) {
+    if (request.headers.get(API_KEY_HEADER).isEmpty) {
       Future.failed(new IllegalArgumentException("missing why-key header"))
     } else {
-      handler.findByTitle(request.headers("why-key"), title).map {
+      handler.findByTitle(request.headers(API_KEY_HEADER), title).map {
         case Some(p) => Ok(Json.toJson(p))
+        case _ => NotFound
+      }
+    }
+  }
+
+  def publish(title: String): Action[AnyContent] = Action.async { implicit request =>
+    if (request.headers.get(API_KEY_HEADER).isEmpty) {
+      Future.failed(new IllegalArgumentException("missing why-key header"))
+    } else {
+      handler.publish(request.headers(API_KEY_HEADER), title).map {
+        case SuccessResult => Ok
         case _ => BadRequest
       }
     }
@@ -65,7 +78,7 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
     }
 
     def success(input: AddPostInput) = {
-      handler.create(input).map {
+      handler.create(request.headers(API_KEY_HEADER), input).map {
         case SuccessResult => Created
         case _ => BadRequest
       }

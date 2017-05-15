@@ -22,12 +22,17 @@ object AuthService {
 class AuthService @Inject()(configuration: Configuration) extends CommonActor with ServiceConsumer with AuthJsonProtocol {
 
   private val authUri = configuration.underlying.getString("services.authentication")
+  import akka.pattern.pipe
+  import context.dispatcher
 
   override def receive: Receive = {
     case VerifyToken(token) =>
       val requestUri = Uri(authUri).withPath(Uri.Path("/v1/auth/authorize"))
+      val s = sender()
       executeHttpRequest[ValidationResult](
-        HttpRequest(HttpMethods.POST, requestUri).withHeaders(RawHeader("Authorization", "Bearer " + token)))
+        HttpRequest(HttpMethods.POST, requestUri).withHeaders(
+          RawHeader("Authorization", "Bearer " + token),
+          RawHeader("Csrf-Token", "nocheck"))).pipeTo(s)
 
   }
 }

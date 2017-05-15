@@ -15,9 +15,9 @@ object PostManager {
 
   case class FindPostById(id: String)
 
-  case class AddPost(input: AddPostInput)
+  case class AddPost(key: String, input: AddPostInput)
 
-  case class AnnouncePost(uuid: String)
+  case class AnnouncePost(key: String, title: String)
 
   val TitleNotUniqueError = ErrorMessage("post.title.nonunique", Some("The post title supplied for a create is not unique"))
 
@@ -37,10 +37,10 @@ class PostManager extends Aggregate[PostData, PostEntity] {
     case FindPostById(id) =>
       forwardCommand(id, GetState(id))
 
-    case AddPost(input) =>
+    case AddPost(key, input) =>
       implicit val timeout = Timeout(5.seconds)
 
-      val id = Math.abs(input.title.hashCode).toString
+      val id = getPostId(key, input.title)
 
       val stateFut = (entityShardRegion ? GetState(id)).mapTo[ServiceResult[PostData]]
       val caller = sender()
@@ -50,17 +50,17 @@ class PostManager extends Aggregate[PostData, PostEntity] {
 
         case util.Success(EmptyResult) =>
 
-          val body = input.body.map(c => BodyComponentData(c._1, c._2.toMap))
-          val fo = PostData(id, input.key, input.author, input.title, body, input.coverUrl, input.metaTitle, input.metaDescription,
-            input
-            .metaKeywords, tags = input.tags, timeToRead = calculateTieToRead(body))
+          val body = input.body.map(c => BodyComponentData(c.component, c.parameters.toMap))
+          val fo = PostData(id, key, input.author, input.title, body, input.coverUrl, input.metaTitle, input.metaDescription,
+            input.metaKeywords, tags = input.tags, timeToRead = calculateTieToRead(body))
           entityShardRegion.tell(CreatePost(fo), caller)
 
         case _ =>
           caller ! Failure(FailureType.Service, ServiceResult.UnexpectedFailure)
       }
 
-    case AnnouncePost(postId) =>
+    case AnnouncePost(key, title) =>
+      val postId = getPostId(key, title)
       forwardCommand(postId, PublishPost(postId))
 
     case arp: AddRelatedPost =>
@@ -68,7 +68,9 @@ class PostManager extends Aggregate[PostData, PostEntity] {
   }
 
   private def calculateTieToRead(body: Seq[BodyComponentData]): String = {
-    val minutes = body.filter(bc => bc.parameters.contains("text")).map(bc => bc.parameters("key").split("\\W+").length).sum
+    val minutes = body.filter(bc => bc.parameters.values.toList.contains("text"))
+      .flatMap(bc => bc.parameters.filter(p => p._1.eq("text")))
+      .map(p => p._2.split("\\W+").length).sum
     if (minutes <= 1) {
       "1 Minuta"
     } else if (minutes > 10) {
@@ -76,5 +78,9 @@ class PostManager extends Aggregate[PostData, PostEntity] {
     } else {
       minutes + " Minuty"
     }
+  }
+
+  private def getPostId(key: String, title: String): String = {
+    Math.abs((key + "-" + title).hashCode).toString
   }
 }
