@@ -63,7 +63,9 @@ object PostView {
 
   case class FindPostPublishedBefore(key: String, before: Long)
 
-  //case class FindPublishedPosts(key: String, page: Option[PageRequest])
+  case class FindPublishedPosts(key: String, page: Option[PageRequest])
+
+  case class FindNotPublishedPosts(key: String, page: Option[PageRequest])
 
   def props: Props = Props[PostView]
 }
@@ -78,6 +80,7 @@ class PostView extends CommonActor with ElasticSearchSupport with CommentReadMod
   lazy val defaultSort = FieldSortDefinition("publishedOn", order = SortOrder.DESC)
 
   lazy val defaultPublishedQuery: QueryDefinition = termQuery("published", true)
+  lazy val defaultNotPublishedQuery: QueryDefinition = termQuery("published", false)
   def defaultKeyQuery(key: String): QueryDefinition = termQuery("key.keyword", key)
 
   override def receive: Receive = {
@@ -86,6 +89,12 @@ class PostView extends CommonActor with ElasticSearchSupport with CommentReadMod
 
     case FindPostsByTag(key, tag) =>
       pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key)).filter(matchQuery("tags", tag)), sort = Some(defaultSort)))
+
+    case FindPublishedPosts(key, None) =>
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key), defaultPublishedQuery), sort = Some(defaultSort)))
+
+    case FindNotPublishedPosts(key, None) =>
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key), defaultNotPublishedQuery), sort = Some(defaultSort)))
 
     case FindPostPublishedAfter(key, after) =>
       //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1)))

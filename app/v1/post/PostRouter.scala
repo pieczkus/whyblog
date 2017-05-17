@@ -19,5 +19,8 @@ class PostRouter @Inject()(controller: PostController) extends SimpleRouter {
     case POST(p"/") =>
       controller.create
 
+    case GET(p"/") =>
+      controller.find()
+
   }
 }
