@@ -5,7 +5,7 @@ import akka.util.Timeout
 import pl.why.common.PersistentEntity.GetState
 import pl.why.common._
 import v1.post.AddPostInput
-import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost, PublishPost}
+import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost, PublishPost, TogglePinned}
 
 import scala.concurrent.duration._
 
@@ -18,6 +18,10 @@ object PostManager {
   case class AddPost(key: String, input: AddPostInput)
 
   case class AnnouncePost(key: String, title: String)
+
+  case class PinPost(key: String, title: String)
+
+  case class UnpinPost(key: String, title: String)
 
   val TitleNotUniqueError = ErrorMessage("post.title.nonunique", Some("The post title supplied for a create is not unique"))
 
@@ -65,6 +69,14 @@ class PostManager extends Aggregate[PostData, PostEntity] {
 
     case arp: AddRelatedPost =>
       forwardCommand(arp.id, arp)
+
+    case PinPost(key, title) =>
+      val postId = getPostId(key, title)
+      forwardCommand(postId, TogglePinned(postId))
+
+    case UnpinPost(key, title) =>
+      val postId = getPostId(key, title)
+      forwardCommand(postId, TogglePinned(postId))
   }
 
   private def calculateTieToRead(body: Seq[BodyComponentData]): String = {

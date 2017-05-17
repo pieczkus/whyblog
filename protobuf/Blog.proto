@@ -22,7 +22,8 @@ message Post {
     string timeToRead = 12;
     repeated string tags = 13;
     repeated string relatedPosts = 14;
-    bool deleted = 15;
+    bool pinned = 15;
+    bool deleted = 16;
 }
 
 message PostCreated {
@@ -39,4 +40,8 @@ message TimeToReadUpdated {
 
 message RelatedPostAdded {
     repeated string relatedPostIds = 1;
+}
+
+message PostPinToggled {
+    bool pinned = 1;
 }

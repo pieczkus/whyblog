@@ -71,12 +71,34 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
     }
   }
 
-  def find(): Action[AnyContent] = Action.async { implicit request =>
+  def find: Action[AnyContent] = Action.async { implicit request =>
     if (request.headers.get(API_KEY_HEADER).isEmpty) {
       Future.failed(new IllegalArgumentException("missing why-key header"))
     } else {
       handler.find(request.headers(API_KEY_HEADER), None).map { posts =>
         Ok(Json.toJson(posts))
+      }
+    }
+  }
+
+  def findPinnedPost: Action[AnyContent] = Action.async { implicit request =>
+    if (request.headers.get(API_KEY_HEADER).isEmpty) {
+      Future.failed(new IllegalArgumentException("missing why-key header"))
+    } else {
+      handler.findPinnedPost(request.headers(API_KEY_HEADER)).map {
+        case Some(p) => Ok(Json.toJson(p))
+        case _ => NotFound
+      }
+    }
+  }
+
+  def pinPost(title: String): Action[AnyContent] = Action.async { implicit request =>
+    if (request.headers.get(API_KEY_HEADER).isEmpty) {
+      Future.failed(new IllegalArgumentException("missing why-key header"))
+    } else {
+      handler.pinPost(request.headers(API_KEY_HEADER), title).map {
+        case SuccessResult => Ok
+        case _ => BadRequest
       }
     }
   }

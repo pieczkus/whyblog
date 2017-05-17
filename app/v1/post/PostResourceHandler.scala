@@ -7,9 +7,9 @@ import akka.util.Timeout
 import pl.why.common.{EmptyResult, FullResult, ServiceResult, SuccessResult}
 import play.api.libs.json.{JsValue, Json, Writes}
 import v1.post.command.{BodyComponentData, PostData}
-import v1.post.command.PostManager.{AddPost, AnnouncePost}
+import v1.post.command.PostManager.{AddPost, AnnouncePost, PinPost, UnpinPost}
 import v1.post.read.PageRequest
-import v1.post.read.PostView.{FindPostByTitle, FindPublishedPosts}
+import v1.post.read.PostView.{FindPinnedPost, FindPostByTitle, FindPublishedPosts}
 import v1.post.read.PostViewBuilder.PostRM
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -85,6 +85,27 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
     (postView ? FindPublishedPosts(key, page)).mapTo[ServiceResult[Seq[PostRM]]].map {
       case FullResult(posts) => posts.map(createCommentResource)
       case _ => Seq.empty
+    }
+  }
+
+  def findPinnedPost(key: String): Future[Option[PostResource]] = {
+    (postView ? FindPinnedPost(key)).mapTo[ServiceResult[Seq[PostRM]]].map {
+      case FullResult(posts) if posts.nonEmpty => Some(createCommentResource(posts.head))
+      case _ => None
+    }
+  }
+
+  def pinPost(key: String, title: String): Future[ServiceResult[Any]] = {
+    (postView ? FindPinnedPost(key)).mapTo[ServiceResult[Seq[PostRM]]].map {
+      case FullResult(posts) if posts.nonEmpty =>
+        posts.foreach(p => {
+          postManager ! UnpinPost(key, p.title)
+        })
+        postManager ! PinPost(key, title)
+        SuccessResult
+      case _ =>
+        postManager ! PinPost(key, title)
+        SuccessResult
     }
   }
 

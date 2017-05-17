@@ -6,15 +6,15 @@ import akka.actor.Props
 import com.trueaccord.scalapb.GeneratedMessage
 import pl.why.common._
 import pl.why.blog.proto.Blog
-import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost, PublishPost}
-import v1.post.command.PostEntity.Event.{PostCreated, PostPublished, RelatedPostAdded}
+import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost, PublishPost, TogglePinned}
+import v1.post.command.PostEntity.Event.{PostCreated, PostPinToggled, PostPublished, RelatedPostAdded}
 
 case class BodyComponentData(component: String, parameters: Map[String, String])
 
 case class PostData(postId: String, key: String, author: String, title: String, body: Seq[BodyComponentData], coverUrl: String,
                     metaTitle: String, metaDescription: String, metaKeywords: String, publishedOn: Long = 0L,
                     commentCount: Int = 0, timeToRead: String = "", tags: List[String] = List.empty,
-                    relatedPosts: Seq[String] = List.empty, deleted: Boolean = false) extends EntityFieldsObject[String, PostData] {
+                    relatedPosts: Seq[String] = List.empty, pinned: Boolean = false, deleted: Boolean = false) extends EntityFieldsObject[String, PostData] {
   def assignId(id: String): PostData = this.copy(postId = id)
 
   def id: String = postId
@@ -43,6 +43,10 @@ object PostEntity {
       def entityId: String = id
     }
 
+    case class TogglePinned(id: String) extends EntityCommand {
+      def entityId: String = id
+    }
+
   }
 
   object Event {
@@ -57,7 +61,7 @@ object PostEntity {
         val body = p.body.map(b => Blog.BodyComponent(b.component, b.parameters))
 
         val post = Blog.Post(p.postId, p.key, p.author, p.title, body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
-          p.publishedOn, p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.deleted)
+          p.publishedOn, p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.pinned, p.deleted)
         Blog.PostCreated(Some(post))
       }
     }
@@ -68,20 +72,20 @@ object PostEntity {
           val p = dm.getPost
           val body = p.body.map(b => BodyComponentData(b.component, b.parameters))
           PostCreated(PostData(p.postId, p.key, p.author, p.title, body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
-            p.publishedOn, p.commentCount, p.timeToRead, p.tags.toList, p.relatedPosts, p.deleted))
+            p.publishedOn, p.commentCount, p.timeToRead, p.tags.toList, p.relatedPosts, p.pinned, p.deleted))
       }
     }
 
-    case class PostPublished(publishedOn: Long) extends PostEvent {
-      override def toDataModel: Blog.PostPublished = {
-        Blog.PostPublished(publishedOn)
+    case class PostPinToggled(pinned: Boolean) extends PostEvent {
+      override def toDataModel: Blog.PostPinToggled = {
+        Blog.PostPinToggled(pinned)
       }
     }
 
-    object PostPublished extends DataModelReader {
-      override def fromDataModel: PartialFunction[GeneratedMessage, PostPublished] = {
-        case dm: Blog.PostPublished =>
-          PostPublished(dm.publishedOn)
+    object PostPinToggled extends DataModelReader {
+      override def fromDataModel: PartialFunction[GeneratedMessage, PostPinToggled] = {
+        case dm: Blog.PostPinToggled =>
+          PostPinToggled(dm.pinned)
       }
     }
 
@@ -95,6 +99,19 @@ object PostEntity {
       override def fromDataModel: PartialFunction[GeneratedMessage, RelatedPostAdded] = {
         case dm: Blog.RelatedPostAdded =>
           RelatedPostAdded(dm.relatedPostIds)
+      }
+    }
+
+    case class PostPublished(publishedOn: Long) extends PostEvent {
+      override def toDataModel: Blog.PostPublished = {
+        Blog.PostPublished(publishedOn)
+      }
+    }
+
+    object PostPublished extends DataModelReader {
+      override def fromDataModel: PartialFunction[GeneratedMessage, PostPublished] = {
+        case dm: Blog.PostPublished =>
+          PostPublished(dm.publishedOn)
       }
     }
 
@@ -121,6 +138,11 @@ class PostEntity extends PersistentEntity[PostData] {
       persist(RelatedPostAdded(state.relatedPosts :+ relatedTitle)) {
         handleEventAndRespond()
       }
+
+    case TogglePinned(_) =>
+      persist(PostPinToggled(!state.pinned)) {
+        handleEventAndRespond()
+      }
   }
 
   override def isCreateMessage(cmd: Any): Boolean = cmd match {
@@ -139,5 +161,8 @@ class PostEntity extends PersistentEntity[PostData] {
 
     case RelatedPostAdded(relatedPostIds) =>
       state = state.copy(relatedPosts = relatedPostIds)
+
+    case PostPinToggled(pinned) =>
+      state = state.copy(pinned = pinned)
   }
 }

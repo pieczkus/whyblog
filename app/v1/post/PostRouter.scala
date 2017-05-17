@@ -20,7 +20,13 @@ class PostRouter @Inject()(controller: PostController) extends SimpleRouter {
       controller.create
 
     case GET(p"/") =>
-      controller.find()
+      controller.find
+
+    case GET(p"/pinned") =>
+      controller.findPinnedPost
+
+    case POST(p"/title/$title/pin") =>
+      controller.pinPost(title)
 
   }
 }

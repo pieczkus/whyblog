@@ -12,11 +12,11 @@ import org.elasticsearch.search.sort.SortOrder
 import pl.why.common.ViewBuilder.{InsertAction, UpdateAction}
 import pl.why.common.{CommonActor, ElasticSearchSupport, ReadModelObject, ViewBuilder}
 import spray.json.JsonFormat
-import v1.post.command.PostEntity.Event.{PostCreated, PostPublished}
+import v1.post.command.PostEntity.Event.{PostCreated, PostPinToggled, PostPublished}
 import v1.post.command.{BodyComponentData, PostEntity}
 import v1.post.read.PostViewBuilder.PostRM
 
-trait CommentReadModel {
+trait PostReadModel {
   def indexRoot = "post"
 
   def entityType = PostEntity.EntityType
@@ -28,7 +28,7 @@ object PostViewBuilder {
   case class PostRM(postId: String, key: String, author: String, title: String, body: Seq[BodyComponentData], coverUrl: String,
                     metaTitle: String, metaDescription: String, metaKeywords: String, publishedOn: Long = 0L,
                     commentCount: Int = 0, timeToRead: String = "", tags: List[String] = List.empty,
-                    relatedPosts: Seq[String] = List.empty, deleted: Boolean = false) extends ReadModelObject {
+                    relatedPosts: Seq[String] = List.empty, pinned: Boolean = false, deleted: Boolean = false) extends ReadModelObject {
     def id: String = postId
   }
 
@@ -36,7 +36,7 @@ object PostViewBuilder {
 }
 
 class PostViewBuilder @Inject()(@Named("resumable-projection-manager") rpm: ActorRef)
-  extends ViewBuilder[PostViewBuilder.PostRM](rpm) with CommentReadModel with PostJsonProtocol {
+  extends ViewBuilder[PostViewBuilder.PostRM](rpm) with PostReadModel with PostJsonProtocol {
   override implicit val rmFormats: JsonFormat[PostViewBuilder.PostRM] = postRmFormat
 
   override def projectionId: String = PostViewBuilder.Name
@@ -44,11 +44,14 @@ class PostViewBuilder @Inject()(@Named("resumable-projection-manager") rpm: Acto
   override def actionFor(id: String, env: EventEnvelope): ViewBuilder.IndexAction = env.event match {
     case PostCreated(p) =>
       val rm = PostRM(p.postId, p.key, p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords,
-        p.publishedOn, p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.deleted)
+        p.publishedOn, p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.pinned, p.deleted)
       InsertAction(id, rm)
 
     case PostPublished(publishedOn) =>
       UpdateAction(id, Map("published" -> true, "publishedOn" -> publishedOn))
+
+    case PostPinToggled(pinned) =>
+      UpdateAction(id, Map("pinned" -> pinned))
   }
 }
 
@@ -56,6 +59,8 @@ object PostView {
   val Name = "post-view"
 
   case class FindPostByTitle(key: String, title: String)
+
+  case class FindPinnedPost(key: String)
 
   case class FindPostsByTag(key: String, tag: String)
 
@@ -70,7 +75,7 @@ object PostView {
   def props: Props = Props[PostView]
 }
 
-class PostView extends CommonActor with ElasticSearchSupport with CommentReadModel with PostJsonProtocol {
+class PostView extends CommonActor with ElasticSearchSupport with PostReadModel with PostJsonProtocol {
 
   import PostView._
   import context.dispatcher
@@ -81,11 +86,12 @@ class PostView extends CommonActor with ElasticSearchSupport with CommentReadMod
 
   lazy val defaultPublishedQuery: QueryDefinition = termQuery("published", true)
   lazy val defaultNotPublishedQuery: QueryDefinition = termQuery("published", false)
+
   def defaultKeyQuery(key: String): QueryDefinition = termQuery("key.keyword", key)
 
   override def receive: Receive = {
     case FindPostByTitle(key, title) =>
-      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery, defaultKeyQuery(key), termQuery("title.keyword", title)), sort = Some(defaultSort)))
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery, defaultKeyQuery(key), termQuery("title.keyword", title))))
 
     case FindPostsByTag(key, tag) =>
       pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key)).filter(matchQuery("tags", tag)), sort = Some(defaultSort)))
@@ -97,9 +103,12 @@ class PostView extends CommonActor with ElasticSearchSupport with CommentReadMod
       pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key), defaultNotPublishedQuery), sort = Some(defaultSort)))
 
     case FindPostPublishedAfter(key, after) =>
-      //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1)))
+    //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1)))
 
     case FindPostPublishedBefore(key, before) =>
-      //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").to(before).includeLower(false)), size = Some(1)))
+    //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").to(before).includeLower(false)), size = Some(1)))
+
+    case FindPinnedPost(key) =>
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery, defaultKeyQuery(key), termQuery("pinned", true))))
   }
 }
