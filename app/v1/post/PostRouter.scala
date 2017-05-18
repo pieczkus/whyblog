@@ -28,5 +28,8 @@ class PostRouter @Inject()(controller: PostController) extends SimpleRouter {
     case POST(p"/title/$title/pin") =>
       controller.pinPost(title)
 
+    case GET(p"/notpublished") =>
+      controller.findNotPublished
+
   }
 }

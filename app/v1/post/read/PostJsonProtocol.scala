@@ -9,6 +9,6 @@ trait PostJsonProtocol extends BaseJsonProtocol {
 
   implicit val bodyComponentFormat: RootJsonFormat[BodyComponentData] = jsonFormat2(BodyComponentData.apply)
 
-  implicit val postRmFormat: RootJsonFormat[PostRM] = jsonFormat16(PostRM.apply)
+  implicit val postRmFormat: RootJsonFormat[PostRM] = jsonFormat17(PostRM.apply)
 
 }

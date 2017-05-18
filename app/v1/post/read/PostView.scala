@@ -28,7 +28,7 @@ object PostViewBuilder {
   case class PostRM(postId: String, key: String, author: String, title: String, body: Seq[BodyComponentData], coverUrl: String,
                     metaTitle: String, metaDescription: String, metaKeywords: String, publishedOn: Long = 0L,
                     commentCount: Int = 0, timeToRead: String = "", tags: List[String] = List.empty,
-                    relatedPosts: Seq[String] = List.empty, pinned: Boolean = false, deleted: Boolean = false) extends ReadModelObject {
+                    relatedPosts: Seq[String] = List.empty, pinned: Boolean = false, published: Boolean = false, deleted: Boolean = false) extends ReadModelObject {
     def id: String = postId
   }
 

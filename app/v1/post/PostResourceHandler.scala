@@ -9,7 +9,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import v1.post.command.{BodyComponentData, PostData}
 import v1.post.command.PostManager.{AddPost, AnnouncePost, PinPost, UnpinPost}
 import v1.post.read.PageRequest
-import v1.post.read.PostView.{FindPinnedPost, FindPostByTitle, FindPublishedPosts}
+import v1.post.read.PostView.{FindNotPublishedPosts, FindPinnedPost, FindPostByTitle, FindPublishedPosts}
 import v1.post.read.PostViewBuilder.PostRM
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,9 +32,9 @@ object PostResource {
   implicit val implicitPostResourceWrites = new Writes[PostResource] {
     def writes(p: PostResource): JsValue = {
       Json.obj(
-        "authore" -> p.author,
+        "author" -> p.author,
         "title" -> p.title,
-        "body" -> Json.arr(p.body),
+        "body" -> p.body,
         "coverUrl" -> p.coverUrl,
         "metaTitle" -> p.metaTitle,
         "metaDescription" -> p.metaDescription,
@@ -42,8 +42,8 @@ object PostResource {
         "publishedOn" -> p.publishedOn,
         "commentCount" -> p.commentCount,
         "timeToRead" -> p.timeToRead,
-        "tags" -> Json.arr(p.tags),
-        "relatedPosts" -> Json.arr(p.relatedPosts)
+        "tags" -> p.tags,
+        "relatedPosts" -> p.relatedPosts
       )
     }
   }
@@ -106,6 +106,13 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
       case _ =>
         postManager ! PinPost(key, title)
         SuccessResult
+    }
+  }
+
+  def findNotPublished(key: String, page: Option[PageRequest]): Future[Seq[PostResource]] = {
+    (postView ? FindNotPublishedPosts(key, page)).mapTo[ServiceResult[Seq[PostRM]]].map {
+      case FullResult(posts) => posts.map(createCommentResource)
+      case _ => Seq.empty
     }
   }
 

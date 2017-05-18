@@ -30,12 +30,12 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
         "title" -> nonEmptyText,
         "body" -> list(
           mapping(
-          "component" -> nonEmptyText,
-          "parameters" -> list(tuple(
-            "name" -> nonEmptyText,
-            "value" -> nonEmptyText
-          ))
-        )(BodyComponentInput.apply)(BodyComponentInput.unapply)),
+            "component" -> nonEmptyText,
+            "parameters" -> list(tuple(
+              "name" -> nonEmptyText,
+              "value" -> nonEmptyText
+            ))
+          )(BodyComponentInput.apply)(BodyComponentInput.unapply)),
         "coverUrl" -> nonEmptyText,
         "tags" -> list(nonEmptyText),
         "metaTitle" -> nonEmptyText,
@@ -100,6 +100,12 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
         case SuccessResult => Ok
         case _ => BadRequest
       }
+    }
+  }
+
+  def findNotPublished = authorizedAction.async { implicit request =>
+    handler.findNotPublished(request.headers(API_KEY_HEADER), None).map { posts =>
+      Ok(Json.toJson(posts))
     }
   }
 
