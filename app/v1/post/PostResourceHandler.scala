@@ -16,7 +16,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 case class PostResource(author: String, title: String, body: Seq[BodyComponentData], coverUrl: String,
                         metaTitle: String, metaDescription: String, metaKeywords: String, publishedOn: Long,
-                        commentCount: Int, timeToRead: String, tags: List[String], relatedPosts: Seq[String])
+                        commentCount: Int, timeToRead: String, tags: List[String], relatedPosts: Seq[String],
+                        pinned: Boolean)
 
 object PostResource {
 
@@ -43,7 +44,8 @@ object PostResource {
         "commentCount" -> p.commentCount,
         "timeToRead" -> p.timeToRead,
         "tags" -> p.tags,
-        "relatedPosts" -> p.relatedPosts
+        "relatedPosts" -> p.relatedPosts,
+        "pinned" -> p.pinned
       )
     }
   }
@@ -117,7 +119,8 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
   }
 
   private def createCommentResource(p: PostRM): PostResource = {
-    PostResource(p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords, p.publishedOn, p.commentCount, p.timeToRead, p.tags, p.relatedPosts)
+    PostResource(p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords, p.publishedOn, p.commentCount,
+      p.timeToRead, p.tags, p.relatedPosts, p.pinned)
   }
 
 }
