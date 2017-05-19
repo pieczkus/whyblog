@@ -109,6 +109,17 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
     }
   }
 
+  def findByTag(tag: String): Action[AnyContent] = Action.async {
+    implicit request =>
+      if (request.headers.get(API_KEY_HEADER).isEmpty) {
+        Future.failed(new IllegalArgumentException("missing why-key header"))
+      } else {
+        handler.findByTag(request.headers(API_KEY_HEADER), tag).map { posts =>
+          Ok(Json.toJson(posts))
+        }
+      }
+  }
+
   private def processJsonCreatePost[A]()(
     implicit request: Request[A]): Future[Result] = {
     def failure(badForm: Form[AddPostInput]) = {

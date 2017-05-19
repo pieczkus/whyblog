@@ -31,5 +31,8 @@ class PostRouter @Inject()(controller: PostController) extends SimpleRouter {
     case GET(p"/notpublished") =>
       controller.findNotPublished
 
+    case GET(p"/tag/$tag") =>
+      controller.findByTag(tag)
+
   }
 }

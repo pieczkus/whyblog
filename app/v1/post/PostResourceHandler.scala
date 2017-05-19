@@ -9,7 +9,7 @@ import play.api.libs.json.{JsValue, Json, Writes}
 import v1.post.command.{BodyComponentData, PostData}
 import v1.post.command.PostManager.{AddPost, AnnouncePost, PinPost, UnpinPost}
 import v1.post.read.PageRequest
-import v1.post.read.PostView.{FindNotPublishedPosts, FindPinnedPost, FindPostByTitle, FindPublishedPosts}
+import v1.post.read.PostView._
 import v1.post.read.PostViewBuilder.PostRM
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -113,6 +113,13 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
 
   def findNotPublished(key: String, page: Option[PageRequest]): Future[Seq[PostResource]] = {
     (postView ? FindNotPublishedPosts(key, page)).mapTo[ServiceResult[Seq[PostRM]]].map {
+      case FullResult(posts) => posts.map(createCommentResource)
+      case _ => Seq.empty
+    }
+  }
+
+  def findByTag(key: String, tag: String): Future[Seq[PostResource]] = {
+    (postView ? FindPostsByTag(key, tag)).mapTo[ServiceResult[Seq[PostRM]]].map {
       case FullResult(posts) => posts.map(createCommentResource)
       case _ => Seq.empty
     }
