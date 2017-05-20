@@ -103,10 +103,14 @@ class PostView extends CommonActor with ElasticSearchSupport with PostReadModel 
       pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key), defaultNotPublishedQuery), sort = Some(defaultSort)))
 
     case FindPostPublishedAfter(key, after) =>
-    //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1)))
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery, defaultKeyQuery(key),
+        rangeQuery("publishedOn").from(after).includeLower(false)), size = Some(1),
+        sort = Some(FieldSortDefinition("publishedOn", order = SortOrder.ASC))))
 
     case FindPostPublishedBefore(key, before) =>
-    //pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery(key), rangeQuery("publishedOn").to(before).includeLower(false)), size = Some(1)))
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery, defaultKeyQuery(key),
+        rangeQuery("publishedOn").to(before).includeUpper(false)), size = Some(1),
+        sort = Some(defaultSort)))
 
     case FindPinnedPost(key) =>
       pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultPublishedQuery, defaultKeyQuery(key), termQuery("pinned", true))))

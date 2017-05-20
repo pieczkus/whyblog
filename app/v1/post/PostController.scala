@@ -120,6 +120,30 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
       }
   }
 
+  def findAfter(after: Long): Action[AnyContent] = Action.async {
+    implicit request =>
+      if (request.headers.get(API_KEY_HEADER).isEmpty) {
+        Future.failed(new IllegalArgumentException("missing why-key header"))
+      } else {
+        handler.findAfter(request.headers(API_KEY_HEADER), after).map {
+          case Some(p) => Ok(Json.toJson(p))
+          case _ => NotFound
+        }
+      }
+  }
+
+  def findBefore(before: Long): Action[AnyContent] = Action.async {
+    implicit request =>
+      if (request.headers.get(API_KEY_HEADER).isEmpty) {
+        Future.failed(new IllegalArgumentException("missing why-key header"))
+      } else {
+        handler.findBefore(request.headers(API_KEY_HEADER), before).map {
+          case Some(p) => Ok(Json.toJson(p))
+          case _ => NotFound
+        }
+      }
+  }
+
   private def processJsonCreatePost[A]()(
     implicit request: Request[A]): Future[Result] = {
     def failure(badForm: Form[AddPostInput]) = {

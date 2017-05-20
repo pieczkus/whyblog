@@ -34,5 +34,10 @@ class PostRouter @Inject()(controller: PostController) extends SimpleRouter {
     case GET(p"/tag/$tag") =>
       controller.findByTag(tag)
 
+    case GET(p"/after/${long(after)}") =>
+      controller.findAfter(after)
+
+    case GET(p"/before/${long(before)}") =>
+      controller.findBefore(before)
   }
 }

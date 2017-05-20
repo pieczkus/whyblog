@@ -125,6 +125,20 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
     }
   }
 
+  def findAfter(key: String, after: Long): Future[Option[PostResource]] = {
+    (postView ? FindPostPublishedAfter(key, after)).mapTo[ServiceResult[Seq[PostRM]]].map {
+      case FullResult(posts) if posts.nonEmpty => Some(createCommentResource(posts.head))
+      case _ => None
+    }
+  }
+
+  def findBefore(key: String, before: Long): Future[Option[PostResource]] = {
+    (postView ? FindPostPublishedBefore(key, before)).mapTo[ServiceResult[Seq[PostRM]]].map {
+      case FullResult(posts) if posts.nonEmpty => Some(createCommentResource(posts.head))
+      case _ => None
+    }
+  }
+
   private def createCommentResource(p: PostRM): PostResource = {
     PostResource(p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords, p.publishedOn, p.commentCount,
       p.timeToRead, p.tags, p.relatedPosts, p.pinned)
