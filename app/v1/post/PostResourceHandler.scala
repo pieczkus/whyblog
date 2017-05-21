@@ -14,7 +14,7 @@ import v1.post.read.PostViewBuilder.PostRM
 
 import scala.concurrent.{ExecutionContext, Future}
 
-case class PostResource(author: String, title: String, body: Seq[BodyComponentData], coverUrl: String,
+case class PostResource(postId: String, author: String, title: String, body: Seq[BodyComponentData], coverUrl: String,
                         metaTitle: String, metaDescription: String, metaKeywords: String, publishedOn: Long,
                         commentCount: Int, timeToRead: String, tags: List[String], relatedPosts: Seq[String],
                         pinned: Boolean)
@@ -33,6 +33,7 @@ object PostResource {
   implicit val implicitPostResourceWrites = new Writes[PostResource] {
     def writes(p: PostResource): JsValue = {
       Json.obj(
+        "postId" -> p.postId,
         "author" -> p.author,
         "title" -> p.title,
         "body" -> p.body,
@@ -140,8 +141,8 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
   }
 
   private def createCommentResource(p: PostRM): PostResource = {
-    PostResource(p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords, p.publishedOn, p.commentCount,
-      p.timeToRead, p.tags, p.relatedPosts, p.pinned)
+    PostResource(p.postId, p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords, p.publishedOn,
+      p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.pinned)
   }
 
 }
