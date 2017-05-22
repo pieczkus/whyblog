@@ -144,6 +144,20 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
       }
   }
 
+  def find(postId: String): Action[AnyContent] = Action.async { implicit request =>
+    handler.find(postId).map {
+      case Some(p) => Ok(Json.toJson(p))
+      case _ => NotFound
+    }
+  }
+
+  def addRelated(postId: String, relatedPostId: String): Action[AnyContent] = authorizedAction.async { implicit request =>
+    handler.addRelatedPost(postId, relatedPostId).map {
+      case SuccessResult => Ok
+      case _ => BadRequest
+    }
+  }
+
   private def processJsonCreatePost[A]()(
     implicit request: Request[A]): Future[Result] = {
     def failure(badForm: Form[AddPostInput]) = {

@@ -23,6 +23,8 @@ object PostManager {
 
   case class UnpinPost(key: String, title: String)
 
+  case class AddRelated(id: String, relatedPostId: String)
+
   val TitleNotUniqueError = ErrorMessage("post.title.nonunique", Some("The post title supplied for a create is not unique"))
 
   def props: Props = Props[PostManager]
@@ -77,6 +79,9 @@ class PostManager extends Aggregate[PostData, PostEntity] {
     case UnpinPost(key, title) =>
       val postId = getPostId(key, title)
       forwardCommand(postId, TogglePinned(postId))
+
+    case AddRelated(postId, relatedPostId) =>
+      forwardCommand(postId, AddRelatedPost(postId, relatedPostId))
   }
 
   private def calculateTieToRead(body: Seq[BodyComponentData]): String = {

@@ -39,7 +39,7 @@ object PostEntity {
       def entityId: String = id
     }
 
-    case class AddRelatedPost(relatedPostId: String, id: String) extends EntityCommand {
+    case class AddRelatedPost(id: String, relatedPostId: String) extends EntityCommand {
       def entityId: String = id
     }
 
@@ -134,8 +134,8 @@ class PostEntity extends PersistentEntity[PostData] {
         handleEventAndRespond()
       }
 
-    case AddRelatedPost(relatedTitle, _) =>
-      persist(RelatedPostAdded(state.relatedPosts :+ relatedTitle)) {
+    case AddRelatedPost(relatedId, _) =>
+      persist(RelatedPostAdded(state.relatedPosts :+ relatedId)) {
         handleEventAndRespond()
       }
 

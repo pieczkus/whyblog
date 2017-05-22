@@ -12,7 +12,7 @@ import org.elasticsearch.search.sort.SortOrder
 import pl.why.common.ViewBuilder.{InsertAction, UpdateAction}
 import pl.why.common.{CommonActor, ElasticSearchSupport, ReadModelObject, ViewBuilder}
 import spray.json.JsonFormat
-import v1.post.command.PostEntity.Event.{PostCreated, PostPinToggled, PostPublished}
+import v1.post.command.PostEntity.Event.{PostCreated, PostPinToggled, PostPublished, RelatedPostAdded}
 import v1.post.command.{BodyComponentData, PostEntity}
 import v1.post.read.PostViewBuilder.PostRM
 
@@ -52,6 +52,9 @@ class PostViewBuilder @Inject()(@Named("resumable-projection-manager") rpm: Acto
 
     case PostPinToggled(pinned) =>
       UpdateAction(id, Map("pinned" -> pinned))
+
+    case RelatedPostAdded(relatedPostIds) =>
+      UpdateAction(id, Map("relatedPosts" -> relatedPostIds))
   }
 }
 

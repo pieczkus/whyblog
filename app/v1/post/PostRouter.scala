@@ -39,5 +39,11 @@ class PostRouter @Inject()(controller: PostController) extends SimpleRouter {
 
     case GET(p"/before/${long(before)}") =>
       controller.findBefore(before)
+
+    case POST(p"/${int(postId)}/related/${int(relatedId)}") =>
+      controller.addRelated(postId.toString, relatedId.toString)
+
+    case GET(p"/${int(postId)}") =>
+      controller.find(postId.toString)
   }
 }

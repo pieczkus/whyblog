@@ -4,10 +4,11 @@ import javax.inject.{Inject, Named, Provider}
 
 import akka.actor.ActorRef
 import akka.util.Timeout
+import pl.why.common.PersistentEntity.GetState
 import pl.why.common.{EmptyResult, FullResult, ServiceResult, SuccessResult}
 import play.api.libs.json.{JsValue, Json, Writes}
 import v1.post.command.{BodyComponentData, PostData}
-import v1.post.command.PostManager.{AddPost, AnnouncePost, PinPost, UnpinPost}
+import v1.post.command.PostManager._
 import v1.post.read.PageRequest
 import v1.post.read.PostView._
 import v1.post.read.PostViewBuilder.PostRM
@@ -140,7 +141,26 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
     }
   }
 
+  def find(postId: String): Future[Option[PostResource]] = {
+    (postManager ? GetState(postId)).mapTo[ServiceResult[PostData]].map {
+      case FullResult(post) => Some(createCommentResource(post))
+      case _ => None
+    }
+  }
+
+  def addRelatedPost(postId: String, relatedPostId: String): Future[ServiceResult[Any]] = {
+    (postManager ? AddRelated(postId, relatedPostId)).mapTo[ServiceResult[PostData]].map {
+      case FullResult(post) => SuccessResult
+      case _ => EmptyResult
+    }
+  }
+
   private def createCommentResource(p: PostRM): PostResource = {
+    PostResource(p.postId, p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords, p.publishedOn,
+      p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.pinned)
+  }
+
+  private def createCommentResource(p: PostData): PostResource = {
     PostResource(p.postId, p.author, p.title, p.body, p.coverUrl, p.metaTitle, p.metaDescription, p.metaKeywords, p.publishedOn,
       p.commentCount, p.timeToRead, p.tags, p.relatedPosts, p.pinned)
   }
