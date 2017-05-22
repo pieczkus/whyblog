@@ -1,8 +1,8 @@
 import javax.inject._
 
-import auth.AuthService
 import com.google.inject.AbstractModule
 import net.codingwell.scalaguice.ScalaModule
+import pl.why.common.auth.AuthService
 import pl.why.common.resumable.ResumableProjectionManager
 import play.api.libs.concurrent.AkkaGuiceSupport
 import play.api.{Configuration, Environment}

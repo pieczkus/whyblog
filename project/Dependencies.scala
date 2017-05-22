@@ -36,7 +36,7 @@ object Dependencies {
 
   val jodaConvert = "org.joda" % "joda-convert" % "1.8.1"
 
-  val adrentechCommpon = "pl.why" %% "common" % "1.0"
+  val whyCommon = "pl.why" %% "common" % "1.1"
 
   val playDependencies: Seq[ModuleID] = Seq(
     scalaGuice,
@@ -55,7 +55,7 @@ object Dependencies {
   )
 
   val arrDependencies: Seq[ModuleID] = Seq(
-    adrentechCommpon,
+    whyCommon,
     proto,
     elastic4s,
     elastic4sXpack,

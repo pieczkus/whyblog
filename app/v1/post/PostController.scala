@@ -2,8 +2,8 @@ package v1.post
 
 import javax.inject.Inject
 
-import auth.AuthorizedAction
 import pl.why.common.SuccessResult
+import pl.why.common.auth.AuthorizedAction
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.libs.json.Json
@@ -103,7 +103,7 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
     }
   }
 
-  def findNotPublished = authorizedAction.async { implicit request =>
+  def findNotPublished: Action[AnyContent] = authorizedAction.async { implicit request =>
     handler.findNotPublished(request.headers(API_KEY_HEADER), None).map { posts =>
       Ok(Json.toJson(posts))
     }
