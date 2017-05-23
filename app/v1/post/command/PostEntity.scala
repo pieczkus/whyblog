@@ -134,7 +134,7 @@ class PostEntity extends PersistentEntity[PostData] {
         handleEventAndRespond()
       }
 
-    case AddRelatedPost(relatedId, _) =>
+    case AddRelatedPost(_, relatedId) =>
       persist(RelatedPostAdded(state.relatedPosts :+ relatedId)) {
         handleEventAndRespond()
       }
