@@ -5,6 +5,7 @@ import javax.inject.{Inject, Named, Provider}
 import akka.actor.ActorRef
 import akka.util.Timeout
 import pl.why.common.PersistentEntity.GetState
+import pl.why.common.lookup.SimpleResponse
 import pl.why.common.{EmptyResult, FullResult, ServiceResult, SuccessResult}
 import play.api.libs.json.{JsValue, Json, Writes}
 import v1.post.command.{BodyComponentData, PostData}
@@ -150,7 +151,14 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
 
   def addRelatedPost(postId: String, relatedPostId: String): Future[ServiceResult[Any]] = {
     (postManager ? AddRelated(postId, relatedPostId)).mapTo[ServiceResult[PostData]].map {
-      case FullResult(post) => SuccessResult
+      case FullResult(_) => SuccessResult
+      case _ => EmptyResult
+    }
+  }
+
+  def incrementCommentCount(postId: String): Future[ServiceResult[Any]] = {
+    (postManager ? AddComment(postId)).mapTo[ServiceResult[PostData]].map {
+      case FullResult(_) => SuccessResult
       case _ => EmptyResult
     }
   }

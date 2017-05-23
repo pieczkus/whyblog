@@ -45,3 +45,7 @@ message RelatedPostAdded {
 message PostPinToggled {
     bool pinned = 1;
 }
+
+message CommentCountIncreased {
+    int32 count = 1;
+}

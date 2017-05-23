@@ -45,5 +45,8 @@ class PostRouter @Inject()(controller: PostController) extends SimpleRouter {
 
     case GET(p"/${int(postId)}") =>
       controller.find(postId.toString)
+
+    case POST(p"/${int(postId)}/comment") =>
+      controller.incrementCommentCount(postId.toString)
   }
 }

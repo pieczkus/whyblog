@@ -4,6 +4,7 @@ import javax.inject.Inject
 
 import pl.why.common.SuccessResult
 import pl.why.common.auth.AuthorizedAction
+import pl.why.common.lookup.SimpleResponse
 import play.api.data.Form
 import play.api.i18n.I18nSupport
 import play.api.libs.json.Json
@@ -154,6 +155,13 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
   def addRelated(postId: String, relatedPostId: String): Action[AnyContent] = authorizedAction.async { implicit request =>
     handler.addRelatedPost(postId, relatedPostId).map {
       case SuccessResult => Ok
+      case _ => BadRequest
+    }
+  }
+
+  def incrementCommentCount(postId: String): Action[AnyContent] = Action.async { implicit request =>
+    handler.incrementCommentCount(postId).map {
+      case SuccessResult => Ok(Json.obj("message" -> "ok"))
       case _ => BadRequest
     }
   }

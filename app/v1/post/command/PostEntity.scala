@@ -6,8 +6,8 @@ import akka.actor.Props
 import com.trueaccord.scalapb.GeneratedMessage
 import pl.why.common._
 import pl.why.blog.proto.Blog
-import v1.post.command.PostEntity.Command.{AddRelatedPost, CreatePost, PublishPost, TogglePinned}
-import v1.post.command.PostEntity.Event.{PostCreated, PostPinToggled, PostPublished, RelatedPostAdded}
+import v1.post.command.PostEntity.Command._
+import v1.post.command.PostEntity.Event._
 
 case class BodyComponentData(component: String, parameters: Map[String, String])
 
@@ -44,6 +44,10 @@ object PostEntity {
     }
 
     case class TogglePinned(id: String) extends EntityCommand {
+      def entityId: String = id
+    }
+
+    case class IncrementCommentCount(id: String) extends EntityCommand {
       def entityId: String = id
     }
 
@@ -115,6 +119,19 @@ object PostEntity {
       }
     }
 
+    case class CommentCountIncreased(commentCount: Int) extends PostEvent {
+      override def toDataModel: Blog.CommentCountIncreased = {
+        Blog.CommentCountIncreased(commentCount)
+      }
+    }
+
+    object CommentCountIncreased extends DataModelReader {
+      override def fromDataModel: PartialFunction[GeneratedMessage, CommentCountIncreased] = {
+        case dm: Blog.CommentCountIncreased =>
+          CommentCountIncreased(dm.count)
+      }
+    }
+
   }
 
   def props: Props = Props[PostEntity]
@@ -143,6 +160,11 @@ class PostEntity extends PersistentEntity[PostData] {
       persist(PostPinToggled(!state.pinned)) {
         handleEventAndRespond()
       }
+
+    case IncrementCommentCount(_) =>
+      persist(CommentCountIncreased(state.commentCount + 1)) {
+        handleEventAndRespond()
+      }
   }
 
   override def isCreateMessage(cmd: Any): Boolean = cmd match {
@@ -164,5 +186,8 @@ class PostEntity extends PersistentEntity[PostData] {
 
     case PostPinToggled(pinned) =>
       state = state.copy(pinned = pinned)
+
+    case CommentCountIncreased(count) =>
+      state = state.copy(commentCount = count)
   }
 }
