@@ -142,7 +142,7 @@ class PostResourceHandler @Inject()(routerProvider: Provider[PostRouter],
   }
 
   def find(postId: String): Future[Option[PostResource]] = {
-    (postManager ? GetState(postId)).mapTo[ServiceResult[PostData]].map {
+    (postManager ? FindPostById(postId)).mapTo[ServiceResult[PostData]].map {
       case FullResult(post) => Some(createCommentResource(post))
       case _ => None
     }
