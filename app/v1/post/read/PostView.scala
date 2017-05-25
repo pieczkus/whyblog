@@ -103,7 +103,7 @@ class PostView extends CommonActor with ElasticSearchSupport with PostReadModel 
       pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key)).filter(matchQuery("tags", tag)), sort = Some(defaultSort)))
 
     case FindPublishedPosts(key, None) =>
-      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key), defaultPublishedQuery), sort = Some(defaultSort)))
+      pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key), defaultPublishedQuery, termQuery("pinned", false)), sort = Some(defaultSort)))
 
     case FindNotPublishedPosts(key, None) =>
       pipeResponse(queryElasticSearch[PostRM](boolQuery().must(defaultKeyQuery(key), defaultNotPublishedQuery), sort = Some(defaultSort)))
