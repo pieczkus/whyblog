@@ -23,7 +23,8 @@ lazy val root = (project in file("."))
     libraryDependencies += "com.datastax.cassandra"  % "cassandra-driver-core" % "3.2.0",
     libraryDependencies ++= playDependencies,
     libraryDependencies ++= akkaDependencies,
-    libraryDependencies ++= arrDependencies
+    libraryDependencies ++= arrDependencies,
+    libraryDependencies += guice
   )
 
 // --------------------

@@ -2,7 +2,7 @@ import sbt._
 import Keys._
 
 object Dependencies {
-  val akkaVersion = "2.5.1"
+  val akkaVersion = "2.5.3"
   val akkaCluster = "com.typesafe.akka" %% "akka-cluster" % akkaVersion
   val akkaClusterTools = "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion
   val akkaClusterSharding = "com.typesafe.akka" %% "akka-cluster-sharding" % akkaVersion
@@ -19,7 +19,7 @@ object Dependencies {
   val logbackClassic = "ch.qos.logback" % "logback-classic" % "1.1.3"
   val jwt = "com.nimbusds" % "nimbus-jose-jwt" % "4.7"
 
-  val json4sVersion = "3.2.9"
+  val json4sVersion = "3.5.2"
   val json4sNative = "org.json4s" %% "json4s-native" % json4sVersion
   val json4sExt = "org.json4s" %% "json4s-ext" % json4sVersion
 
@@ -59,7 +59,9 @@ object Dependencies {
     proto,
     elastic4s,
     elastic4sXpack,
-    jodaConvert
+    jodaConvert,
+    json4sNative,
+    json4sExt
   )
 }
 
