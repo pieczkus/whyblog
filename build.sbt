@@ -19,8 +19,6 @@ lazy val root = (project in file("."))
   .settings(
     name := """why-blog""",
     scalaSource in GatlingTest := baseDirectory.value / "/gatling/simulation",
-    //TODO: remove after akka-persistence-cassandra bump
-    libraryDependencies += "com.datastax.cassandra"  % "cassandra-driver-core" % "3.2.0",
     libraryDependencies ++= playDependencies,
     libraryDependencies ++= akkaDependencies,
     libraryDependencies ++= arrDependencies,
