@@ -88,7 +88,7 @@ class PostController @Inject()(cc: ControllerComponents, handler: PostResourceHa
     } else {
       handler.findPinnedPost(request.headers(API_KEY_HEADER)).map {
         case Some(p) => Ok(Json.toJson(p))
-        case _ => NotFound
+        case _ => Ok
       }
     }
   }
